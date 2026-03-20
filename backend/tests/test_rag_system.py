@@ -10,14 +10,15 @@ Covers:
 - Exceptions from the AI generator propagate (not silently swallowed)
 - The prompt wraps the raw user query (regression: bare query vs. wrapped prompt)
 """
+
 import pytest
 from unittest.mock import MagicMock, patch, call
 from rag_system import RAGSystem
 
-
 # ---------------------------------------------------------------------------
 # Fixture: a fully mocked RAGSystem
 # ---------------------------------------------------------------------------
+
 
 @pytest.fixture
 def rag(tmp_path):
@@ -30,12 +31,14 @@ def rag(tmp_path):
     - DocumentProcessor → MagicMock
     - SessionManager → real object (lightweight, no I/O)
     """
-    with patch("rag_system.VectorStore") as MockVS, \
-         patch("rag_system.AIGenerator") as MockAI, \
-         patch("rag_system.DocumentProcessor"), \
-         patch("rag_system.CourseSearchTool"), \
-         patch("rag_system.CourseOutlineTool"), \
-         patch("rag_system.ToolManager") as MockTM:
+    with (
+        patch("rag_system.VectorStore") as MockVS,
+        patch("rag_system.AIGenerator") as MockAI,
+        patch("rag_system.DocumentProcessor"),
+        patch("rag_system.CourseSearchTool"),
+        patch("rag_system.CourseOutlineTool"),
+        patch("rag_system.ToolManager") as MockTM,
+    ):
 
         # Configure the mock VectorStore instance
         mock_vs_instance = MagicMock()
@@ -53,6 +56,7 @@ def rag(tmp_path):
         MockTM.return_value = mock_tm_instance
 
         from config import Config
+
         cfg = Config(
             ANTHROPIC_API_KEY="test-key",
             ANTHROPIC_MODEL="claude-sonnet-4-5",
@@ -71,6 +75,7 @@ def rag(tmp_path):
 # ---------------------------------------------------------------------------
 # Return value
 # ---------------------------------------------------------------------------
+
 
 class TestQueryReturnValue:
     def test_returns_tuple_of_two(self, rag):
@@ -97,6 +102,7 @@ class TestQueryReturnValue:
 # ---------------------------------------------------------------------------
 # AI generator is called correctly
 # ---------------------------------------------------------------------------
+
 
 class TestAIGeneratorCall:
     def test_generate_response_is_called(self, rag):
@@ -125,6 +131,7 @@ class TestAIGeneratorCall:
 # ---------------------------------------------------------------------------
 # Conversation history
 # ---------------------------------------------------------------------------
+
 
 class TestConversationHistory:
     def test_no_history_passed_without_session(self, rag):
@@ -157,6 +164,7 @@ class TestConversationHistory:
 # Source lifecycle
 # ---------------------------------------------------------------------------
 
+
 class TestSourceLifecycle:
     def test_get_last_sources_called_after_generate(self, rag):
         rag.query("q")
@@ -174,14 +182,13 @@ class TestSourceLifecycle:
 
         rag.query("q")
 
-        assert call_order == ["get", "reset"], (
-            f"Expected ['get', 'reset'] but got {call_order}"
-        )
+        assert call_order == ["get", "reset"], f"Expected ['get', 'reset'] but got {call_order}"
 
 
 # ---------------------------------------------------------------------------
 # Exception propagation
 # ---------------------------------------------------------------------------
+
 
 class TestExceptionPropagation:
     def test_ai_generator_exception_propagates(self, rag):

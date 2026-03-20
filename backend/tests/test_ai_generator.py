@@ -7,15 +7,16 @@ Tests for AIGenerator — verifying:
 5. Conversation history is embedded in the system prompt.
 6. The configured model name is valid for the Anthropic API.
 """
+
 import pytest
 from unittest.mock import MagicMock, patch, call
 from ai_generator import AIGenerator
 from config import config
 
-
 # ---------------------------------------------------------------------------
 # Helpers — build realistic mock Anthropic SDK responses
 # ---------------------------------------------------------------------------
+
 
 def _text_block(text: str):
     block = MagicMock()
@@ -52,6 +53,7 @@ def _make_generator(mock_client=None):
 # 1. Direct text response (no tool use)
 # ---------------------------------------------------------------------------
 
+
 class TestDirectResponse:
     def test_returns_text_from_end_turn_response(self):
         client = MagicMock()
@@ -78,9 +80,7 @@ class TestDirectResponse:
 
     def test_api_called_exactly_once_on_direct_response(self):
         client = MagicMock()
-        client.messages.create.return_value = _make_response(
-            "end_turn", [_text_block("Answer")]
-        )
+        client.messages.create.return_value = _make_response("end_turn", [_text_block("Answer")])
 
         gen = _make_generator(client)
         gen.generate_response(query="q")
@@ -89,9 +89,7 @@ class TestDirectResponse:
 
     def test_query_appears_in_messages(self):
         client = MagicMock()
-        client.messages.create.return_value = _make_response(
-            "end_turn", [_text_block("ok")]
-        )
+        client.messages.create.return_value = _make_response("end_turn", [_text_block("ok")])
 
         gen = _make_generator(client)
         gen.generate_response(query="My special question")
@@ -105,6 +103,7 @@ class TestDirectResponse:
 # 2. Tool use — trigger and argument forwarding
 # ---------------------------------------------------------------------------
 
+
 class TestToolUse:
     def _setup(self, tool_input: dict, tool_result: str = "search results"):
         """
@@ -115,9 +114,7 @@ class TestToolUse:
             "tool_use",
             [_tool_use_block("search_course_content", "tool_abc", tool_input)],
         )
-        second_response = _make_response(
-            "end_turn", [_text_block("Final synthesized answer.")]
-        )
+        second_response = _make_response("end_turn", [_text_block("Final synthesized answer.")])
 
         client = MagicMock()
         client.messages.create.side_effect = [first_response, second_response]
@@ -130,16 +127,12 @@ class TestToolUse:
 
     def test_execute_tool_is_called_on_tool_use(self):
         gen, client, tool_manager = self._setup({"query": "MCP basics"})
-        gen.generate_response(
-            query="What is MCP?", tools=[{}], tool_manager=tool_manager
-        )
+        gen.generate_response(query="What is MCP?", tools=[{}], tool_manager=tool_manager)
         tool_manager.execute_tool.assert_called_once()
 
     def test_execute_tool_called_with_correct_name(self):
         gen, client, tool_manager = self._setup({"query": "MCP basics"})
-        gen.generate_response(
-            query="What is MCP?", tools=[{}], tool_manager=tool_manager
-        )
+        gen.generate_response(query="What is MCP?", tools=[{}], tool_manager=tool_manager)
         name_arg = tool_manager.execute_tool.call_args[0][0]
         assert name_arg == "search_course_content"
 
@@ -147,18 +140,14 @@ class TestToolUse:
         gen, client, tool_manager = self._setup(
             {"query": "MCP basics", "course_name": "MCP Course"}
         )
-        gen.generate_response(
-            query="What is MCP?", tools=[{}], tool_manager=tool_manager
-        )
+        gen.generate_response(query="What is MCP?", tools=[{}], tool_manager=tool_manager)
         _, kwargs = tool_manager.execute_tool.call_args
         assert kwargs.get("query") == "MCP basics"
         assert kwargs.get("course_name") == "MCP Course"
 
     def test_final_text_is_returned_after_tool_use(self):
         gen, client, tool_manager = self._setup({"query": "MCP"})
-        result = gen.generate_response(
-            query="What is MCP?", tools=[{}], tool_manager=tool_manager
-        )
+        result = gen.generate_response(query="What is MCP?", tools=[{}], tool_manager=tool_manager)
         assert result == "Final synthesized answer."
 
     def test_api_called_twice_on_tool_use(self):
@@ -192,7 +181,9 @@ class TestToolUse:
         can optionally make a second tool call. If Claude returns text, the loop
         exits early without a separate synthesis call (early-exit path)."""
         gen, client, tool_manager = self._setup({"query": "topic"})
-        gen.generate_response(query="q", tools=[{"name": "search_course_content"}], tool_manager=tool_manager)
+        gen.generate_response(
+            query="q", tools=[{"name": "search_course_content"}], tool_manager=tool_manager
+        )
 
         second_call_kwargs = client.messages.create.call_args_list[1][1]
         assert "tools" in second_call_kwargs
@@ -203,12 +194,11 @@ class TestToolUse:
 # 3. Conversation history in system prompt
 # ---------------------------------------------------------------------------
 
+
 class TestConversationHistory:
     def test_history_included_in_system_when_provided(self):
         client = MagicMock()
-        client.messages.create.return_value = _make_response(
-            "end_turn", [_text_block("ok")]
-        )
+        client.messages.create.return_value = _make_response("end_turn", [_text_block("ok")])
 
         gen = _make_generator(client)
         gen.generate_response(
@@ -223,9 +213,7 @@ class TestConversationHistory:
 
     def test_no_history_key_absent_from_system(self):
         client = MagicMock()
-        client.messages.create.return_value = _make_response(
-            "end_turn", [_text_block("ok")]
-        )
+        client.messages.create.return_value = _make_response("end_turn", [_text_block("ok")])
 
         gen = _make_generator(client)
         gen.generate_response(query="question", conversation_history=None)
@@ -241,12 +229,11 @@ class TestConversationHistory:
 # 4. Tools wiring
 # ---------------------------------------------------------------------------
 
+
 class TestToolsWiring:
     def test_tools_added_to_api_params_when_provided(self):
         client = MagicMock()
-        client.messages.create.return_value = _make_response(
-            "end_turn", [_text_block("ok")]
-        )
+        client.messages.create.return_value = _make_response("end_turn", [_text_block("ok")])
         tool_def = {"name": "search_course_content", "input_schema": {}}
 
         gen = _make_generator(client)
@@ -258,9 +245,7 @@ class TestToolsWiring:
 
     def test_tool_choice_auto_when_tools_provided(self):
         client = MagicMock()
-        client.messages.create.return_value = _make_response(
-            "end_turn", [_text_block("ok")]
-        )
+        client.messages.create.return_value = _make_response("end_turn", [_text_block("ok")])
 
         gen = _make_generator(client)
         gen.generate_response(query="q", tools=[{"name": "t"}])
@@ -270,9 +255,7 @@ class TestToolsWiring:
 
     def test_no_tool_choice_when_no_tools(self):
         client = MagicMock()
-        client.messages.create.return_value = _make_response(
-            "end_turn", [_text_block("ok")]
-        )
+        client.messages.create.return_value = _make_response("end_turn", [_text_block("ok")])
 
         gen = _make_generator(client)
         gen.generate_response(query="q")
@@ -333,6 +316,7 @@ class TestModelName:
 # 6. Sequential tool use (up to 2 rounds)
 # ---------------------------------------------------------------------------
 
+
 class TestSequentialToolUse:
     """
     Verify the multi-round tool loop: up to 2 tool-call rounds each as a
@@ -344,8 +328,12 @@ class TestSequentialToolUse:
         Queue 3 responses: tool_use → tool_use → end_turn.
         Returns (gen, client, tool_manager).
         """
-        r1 = _make_response("tool_use", [_tool_use_block("search_course_content", "id_r1", {"query": "first"})])
-        r2 = _make_response("tool_use", [_tool_use_block("get_course_outline", "id_r2", {"course_name": "X"})])
+        r1 = _make_response(
+            "tool_use", [_tool_use_block("search_course_content", "id_r1", {"query": "first"})]
+        )
+        r2 = _make_response(
+            "tool_use", [_tool_use_block("get_course_outline", "id_r2", {"course_name": "X"})]
+        )
         r3 = _make_response("end_turn", [_text_block("Final answer after two rounds.")])
 
         client = MagicMock()
@@ -375,7 +363,9 @@ class TestSequentialToolUse:
     def test_round_two_api_call_includes_tools(self):
         """The intermediate (round-2) API call must include tools so Claude can make another call."""
         gen, client, tool_manager = self._setup_two_rounds()
-        gen.generate_response(query="q", tools=[{"name": "search_course_content"}], tool_manager=tool_manager)
+        gen.generate_response(
+            query="q", tools=[{"name": "search_course_content"}], tool_manager=tool_manager
+        )
         second_call_kwargs = client.messages.create.call_args_list[1][1]
         assert "tools" in second_call_kwargs
         assert second_call_kwargs.get("tool_choice") == {"type": "auto"}
@@ -383,7 +373,9 @@ class TestSequentialToolUse:
     def test_synthesis_call_omits_tools(self):
         """The final (synthesis) API call must NOT include tools."""
         gen, client, tool_manager = self._setup_two_rounds()
-        gen.generate_response(query="q", tools=[{"name": "search_course_content"}], tool_manager=tool_manager)
+        gen.generate_response(
+            query="q", tools=[{"name": "search_course_content"}], tool_manager=tool_manager
+        )
         third_call_kwargs = client.messages.create.call_args_list[2][1]
         assert "tools" not in third_call_kwargs
         assert "tool_choice" not in third_call_kwargs
@@ -399,7 +391,9 @@ class TestSequentialToolUse:
 
     def test_early_termination_when_round_two_returns_text(self):
         """If the intermediate call returns end_turn, no separate synthesis call is made."""
-        r1 = _make_response("tool_use", [_tool_use_block("search_course_content", "id1", {"query": "q"})])
+        r1 = _make_response(
+            "tool_use", [_tool_use_block("search_course_content", "id1", {"query": "q"})]
+        )
         r2 = _make_response("end_turn", [_text_block("Synthesized early.")])
 
         client = MagicMock()
@@ -419,6 +413,7 @@ class TestSequentialToolUse:
 # 7. Tool error handling
 # ---------------------------------------------------------------------------
 
+
 class TestToolErrorHandling:
     """
     Verify that tool execution errors are caught and forwarded to Claude
@@ -426,7 +421,9 @@ class TestToolErrorHandling:
     """
 
     def _setup_with_error(self, error_msg="DB connection failed"):
-        r1 = _make_response("tool_use", [_tool_use_block("search_course_content", "id_err", {"query": "x"})])
+        r1 = _make_response(
+            "tool_use", [_tool_use_block("search_course_content", "id_err", {"query": "x"})]
+        )
         r2 = _make_response("end_turn", [_text_block("Sorry, the tool failed.")])
 
         client = MagicMock()

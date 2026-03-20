@@ -9,15 +9,16 @@ Covers:
 - Source tracking (label + URL)
 - Tool definition structure
 """
+
 import pytest
 from unittest.mock import MagicMock, call
 from search_tools import CourseSearchTool, ToolManager
 from vector_store import SearchResults
 
-
 # ===========================================================================
 # Helpers
 # ===========================================================================
+
 
 def make_tool(store):
     return CourseSearchTool(store)
@@ -26,6 +27,7 @@ def make_tool(store):
 # ===========================================================================
 # Output formatting
 # ===========================================================================
+
 
 class TestExecuteFormatting:
     def test_result_contains_course_title(self, mock_store, single_result):
@@ -67,9 +69,7 @@ class TestExecuteFormatting:
         assert "Lesson 2" in output
         assert "Lesson 3" in output
 
-    def test_result_without_lesson_number_omits_lesson_label(
-        self, mock_store, no_lesson_result
-    ):
+    def test_result_without_lesson_number_omits_lesson_label(self, mock_store, no_lesson_result):
         mock_store.search.return_value = no_lesson_result
         mock_store.get_lesson_link.return_value = None
 
@@ -85,6 +85,7 @@ class TestExecuteFormatting:
 # Error and empty paths
 # ===========================================================================
 
+
 class TestExecuteErrorAndEmpty:
     def test_store_error_is_returned_verbatim(self, mock_store, error_result):
         mock_store.search.return_value = error_result
@@ -94,9 +95,7 @@ class TestExecuteErrorAndEmpty:
 
         assert "ChromaDB connection failed" in output
 
-    def test_empty_results_message_contains_no_relevant_content(
-        self, mock_store, empty_result
-    ):
+    def test_empty_results_message_contains_no_relevant_content(self, mock_store, empty_result):
         mock_store.search.return_value = empty_result
 
         tool = make_tool(mock_store)
@@ -104,9 +103,7 @@ class TestExecuteErrorAndEmpty:
 
         assert "No relevant content found" in output
 
-    def test_empty_with_course_filter_mentions_course_name(
-        self, mock_store, empty_result
-    ):
+    def test_empty_with_course_filter_mentions_course_name(self, mock_store, empty_result):
         mock_store.search.return_value = empty_result
 
         tool = make_tool(mock_store)
@@ -114,9 +111,7 @@ class TestExecuteErrorAndEmpty:
 
         assert "Python Basics" in output
 
-    def test_empty_with_lesson_filter_mentions_lesson_number(
-        self, mock_store, empty_result
-    ):
+    def test_empty_with_lesson_filter_mentions_lesson_number(self, mock_store, empty_result):
         mock_store.search.return_value = empty_result
 
         tool = make_tool(mock_store)
@@ -128,6 +123,7 @@ class TestExecuteErrorAndEmpty:
 # ===========================================================================
 # Parameter forwarding
 # ===========================================================================
+
 
 class TestExecuteParameterForwarding:
     def test_search_called_with_query(self, mock_store, single_result):
@@ -183,6 +179,7 @@ class TestExecuteParameterForwarding:
 # ===========================================================================
 # Source tracking
 # ===========================================================================
+
 
 class TestSourceTracking:
     def test_sources_populated_after_execute(self, mock_store, single_result):
@@ -268,6 +265,7 @@ class TestSourceTracking:
 # Tool definition structure
 # ===========================================================================
 
+
 class TestToolDefinition:
     def test_tool_name_is_search_course_content(self, mock_store):
         tool = make_tool(mock_store)
@@ -307,6 +305,7 @@ class TestToolDefinition:
 # ToolManager integration
 # ===========================================================================
 
+
 class TestToolManager:
     def test_register_and_execute_tool(self, mock_store, single_result):
         mock_store.search.return_value = single_result
@@ -330,9 +329,7 @@ class TestToolManager:
         assert isinstance(defs, list)
         assert len(defs) == 1
 
-    def test_get_last_sources_returns_sources_from_tool(
-        self, mock_store, single_result
-    ):
+    def test_get_last_sources_returns_sources_from_tool(self, mock_store, single_result):
         mock_store.search.return_value = single_result
         mock_store.get_lesson_link.return_value = "https://example.com"
 
