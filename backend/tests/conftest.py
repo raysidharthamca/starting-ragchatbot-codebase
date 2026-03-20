@@ -2,6 +2,7 @@
 Shared test fixtures and path configuration.
 All tests import from backend/ by adding it to sys.path here.
 """
+
 import sys
 import os
 
@@ -12,10 +13,10 @@ import pytest
 from unittest.mock import MagicMock
 from vector_store import SearchResults
 
-
 # ---------------------------------------------------------------------------
 # Reusable SearchResults fixtures
 # ---------------------------------------------------------------------------
+
 
 @pytest.fixture
 def single_result():
@@ -70,6 +71,7 @@ def error_result():
 # ---------------------------------------------------------------------------
 # Mock VectorStore
 # ---------------------------------------------------------------------------
+
 
 @pytest.fixture
 def mock_store():
