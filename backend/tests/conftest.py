@@ -75,3 +75,20 @@ def error_result():
 def mock_store():
     """Bare MagicMock standing in for VectorStore."""
     return MagicMock()
+
+
+# ---------------------------------------------------------------------------
+# Mock RAGSystem
+# ---------------------------------------------------------------------------
+
+@pytest.fixture
+def mock_rag():
+    """MagicMock RAGSystem with sensible defaults for endpoint/integration tests."""
+    m = MagicMock()
+    m.session_manager.create_session.return_value = "test-session-001"
+    m.query.return_value = ("Default answer", [])
+    m.get_course_analytics.return_value = {
+        "total_courses": 0,
+        "course_titles": [],
+    }
+    return m
